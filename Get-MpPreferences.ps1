@@ -6,8 +6,17 @@
     .DESCRIPTION
         This is a overload function that will call Get-MpPreferences from the Microsoft Defender Antivirus policies with full details on each Setting
 
-    .PARAMETER DisplayResults
+    .PARAMETER ComputerStatusExportFile
+        Computer stat output file name
+
+    .PARAMETER DisplayAvResults
+        Switch used to display antivirus policy results to the console
+
+    .PARAMETER DisplayPolicyResults
         Switch used to display results to the console
+
+    .PARAMETER DisplaySignatureResults
+        Switch used to display antivirus signature results to the console
 
     .PARAMETER ErrorLog
         Error log name
@@ -18,8 +27,11 @@
     .PARAMETER ExportPath
         Output file location
 
+    .PARAMETER SaveResults
+        Save all information to disk
+
     .EXAMPLE
-        C:\PS> Get-MpPreferences -DisplayResults
+        C:\PS> Get-MpPreferences -DisplayPolicyResults
 
         This will retrieve the settings and save them to the default location of "$env:TEMP\\MpPreferencesOutput.txt" and display the information to the console
 
@@ -44,14 +56,23 @@
 
     [CmdletBinding()]
     param(
+        [string]
+        $ComputerStatusExportFile = "ComputerStatsOutput.txt",
+
         [switch]
-        $DisplayResults,
+        $DisplayAvResults,
+
+        [switch]
+        $DisplayPolicyResults,
+
+        [switch]
+        $DisplaySignatureResults,
 
         [string]
         $ErrorLog = "MpPreferenceErrors.txt",
 
         [string]
-        $ExportFile = "MpPreferencesOutput.txt",
+        $MpExportFile = "MpPreferencesOutput.txt",
 
         [string]
         $ExportPath = "$env:TEMP"
@@ -256,7 +277,7 @@
                 0x6 { $cloudBlockLevel = '6 = Zero tolerance blocking level – block all unknown executables' }
             }
 
-            $customPreferences = [PSCustomObject]@{
+            $policyResults = [PSCustomObject]@{
                 AllowDatagramProcessingOnWinServer            = $preferences.AllowDatagramProcessingOnWinServer
                 AllowNetworkProtectionDownLevel               = $preferences.AllowNetworkProtectionDownLevel
                 AllowNetworkProtectionOnWinServer             = $preferences.AllowNetworkProtectionOnWinServer
@@ -366,21 +387,86 @@
             [PSCustomObject]$_ | Export-CSV -Path (Join-Path -Path $ExportPath -ChildPath $ErrorLog) -Encoding UTF8 -Force -NoTypeInformation -ErrorAction Stop
             return
         }
-
         try {
-            Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $ExportFile) -InputObject $customPreferences -Encoding UTF8 -ErrorAction SilentlyContinue
+
+            # Get computer stats
+            $antivirusStatus = Get-MpComputerStatus -ErrorAction Stop
+
+            $avResults = [PSCustomObject]@{
+                AMRunningMode                    = $antivirusStatus.AMRunningMode
+                AMServiceEnabled                 = $antivirusStatus.AMServiceEnabled
+                AntispywareEnabled               = $antivirusStatus.AntispywareEnabled
+                AntivirusEnabled                 = $antivirusStatus.AntivirusEnabled
+                BehaviorMonitorEnabled           = $antivirusStatus.BehaviorMonitorEnabled
+                ComputerState                    = $antivirusStatus.ComputerState
+                DefenderSignaturesOutOfDate      = $antivirusStatus.DefenderSignaturesOutOfDate
+                DeviceControlDefaultEnforcement  = $antivirusStatus.DeviceControlDefaultEnforcement
+                DeviceControlPoliciesLastUpdated = $antivirusStatus.DeviceControlPoliciesLastUpdated
+                DeviceControlState               = $antivirusStatus.DeviceControlState
+                IsTamperProtected                = $antivirusStatus.IsTamperProtected
+                IsVirtualMachine                 = $antivirusStatus.IsVirtualMachine
+                NISEnabled                       = $antivirusStatus.NISEnabled
+                OnAccessProtectionEnabled        = $antivirusStatus.OnAccessProtectionEnabled
+                RealTimeProtectionEnabled        = $antivirusStatus.RealTimeProtectionEnabled
+                RealTimeScanDirection            = $antivirusStatus.RealTimeScanDirection
+                RebootRequired                   = $antivirusStatus.RebootRequired
+                TamperProtectionSource           = $antivirusStatus.TamperProtectionSource
+                TDTMode                          = $antivirusStatus.TDTMode
+                TDTStatus                        = $antivirusStatus.TDTStatus
+            }
+
+            $sigResults = [PSCustomObject]@{
+                AMEngineVersion                 = $antivirusStatus.AMEngineVersion
+                AMProductVersion                = $antivirusStatus.AMProductVersion
+                AMServiceVersion                = $antivirusStatus.AMServiceVersion
+                AntispywareSignatureAge         = $antivirusStatus.AntispywareSignatureAge
+                AntispywareSignatureLastUpdated = $antivirusStatus.AntispywareSignatureLastUpdated
+                AntispywareSignatureVersion     = $antivirusStatus.AntispywareSignatureVersion
+                AntivirusSignatureAge           = $antivirusStatus.AntivirusSignatureAge
+                AntivirusSignatureLastUpdated   = $antivirusStatus.AntivirusSignatureLastUpdated
+                AntivirusSignatureVersion       = $antivirusStatus.AntivirusSignatureVersion
+                DefenderSignaturesOutOfDate     = $antivirusStatus.DefenderSignaturesOutOfDate
+                NISEngineVersion                = $antivirusStatus.NISEngineVersion
+                NISSignatureAge                 = $antivirusStatus.NISSignatureAge
+                NISSignatureLastUpdated         = $antivirusStatus.NISSignatureLastUpdated
+                NISSignatureVersion             = $antivirusStatus.NISSignatureVersion
+                QuickScanSignatureVersion       = $antivirusStatus.QuickScanSignatureVersion
+            }
         }
         catch {
             Write-Output "ERROR: Please check $(Join-Path -Path $ExportPath -ChildPath $ErrorLog) for more information"
-            Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $ErrorLog) -InputObject $_ -Encoding UTF8 -NoTypeInformation -Force -ErrorAction Stop
+            [PSCustomObject]$_ | Export-CSV -Path (Join-Path -Path $ExportPath -ChildPath $ErrorLog) -Encoding UTF8 -Force -NoTypeInformation -ErrorAction Stop
             return
         }
 
-        if ($DisplayResults) { $customPreferences }
+        # If nothing was specified to be displayed then show everything by default
+        if(-NOT($DisplayAvResults) -and -NOT($DisplaySignatureResults) -and -NOT($DisplayPolicyResults))
+        {
+            $avResults
+            $sigResults
+            $policyResults
+        }
+
+        # Allow the end user to select the results to be displayed by choice
+        if ($DisplayAvResults) { $avResults }
+        if ($DisplaySignatureResults) { $sigResults }
+        if ($DisplayPolicyResults) { $policyResults }
         Remove-Module -Name ConfigDefender
     }
 
     end {
-        Write-Output "Results exported to: $(Join-Path -Path $ExportPath -ChildPath $ExportFile)"
+        if ($SaveResults) {
+            try {
+                Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $MpExportFile)"
+                Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $MpExportFile) -InputObject $policyResults -Encoding UTF8 -ErrorAction SilentlyContinue
+                Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $ComputerStatusExportFile)"
+                Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $ComputerStatusExportFile) -InputObject $avResults -Encoding UTF8 -ErrorAction SilentlyContinue
+            }
+            catch {
+                Write-Output "ERROR: Please check $(Join-Path -Path $ExportPath -ChildPath $ErrorLog) for more information"
+                Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $ErrorLog) -InputObject $_ -Encoding UTF8 -NoTypeInformation -Force -ErrorAction Stop
+                return
+            }
+        }
     }
 }
