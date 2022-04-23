@@ -6,8 +6,8 @@
     .DESCRIPTION
         This is a overload function that will call Get-MpPreferences from the Microsoft Defender Antivirus policies with full details on each Setting
 
-    .PARAMETER ComputerStatusExportFile
-        Computer stat output file name
+    .PARAMETER AvResultsExportFile
+        Computer antivirus output file name
 
     .PARAMETER DisplayAvResults
         Switch used to display antivirus policy results to the console
@@ -28,7 +28,10 @@
         Output file location
 
     .PARAMETER SaveResults
-        Save all information to disk
+        Save all files to disk
+
+    .PARAMETER SignatureResultsExportFile
+        Computer antivirus signature output file name
 
     .EXAMPLE
         C:\PS> Get-MpPreferences -DisplayPolicyResults
@@ -57,7 +60,7 @@
     [CmdletBinding()]
     param(
         [string]
-        $ComputerStatusExportFile = "ComputerStatsOutput.txt",
+        $AvResultsExportFile = "AvOutput.txt",
 
         [switch]
         $DisplayAvResults,
@@ -75,11 +78,18 @@
         $MpExportFile = "MpPreferencesOutput.txt",
 
         [string]
-        $ExportPath = "$env:TEMP"
+        $ExportPath = "$env:TEMP",
+
+        [switch]
+        $SaveResults,
+
+        [string]
+        $SignatureResultsExportFile = "AvSignatureOutput.txt"
     )
 
     begin {
         Write-Output "Checking for and importing the Microsoft Defender module"
+        $parameters = $PSBoundParameters
     }
 
     process {
@@ -87,6 +97,7 @@
             Write-Output "Getting ConfigDefender Antivirus preferences"
             $preferences = Get-MpPreference -ErrorAction Stop
 
+            #region Customizations
             # Windows Defender scans and updates
             switch ($preferences.DefinitionUpdatesChannel) {
                 0x0 { $definitionUpdatesChannel = 'NotConfigured. Devices stay up to date automatically during the gradual release cycle. This value is suitable for most devices.' }
@@ -276,6 +287,7 @@
                 0x5 { $cloudBlockLevel = '5 = High + blocking level applies extra protection measures (might affect client performance and increase your chance of false positives).' }
                 0x6 { $cloudBlockLevel = '6 = Zero tolerance blocking level – block all unknown executables' }
             }
+            #endregion Customizations
 
             $policyResults = [PSCustomObject]@{
                 AllowDatagramProcessingOnWinServer            = $preferences.AllowDatagramProcessingOnWinServer
@@ -362,17 +374,6 @@
                 ServiceHealthReportInterval                   = $preferences.ServiceHealthReportInterval
                 SevereThreatDefaultAction                     = $severeThreatDefaultAction
                 SharedSignaturesPath                          = $preferences.SharedSignaturesPath
-                SignatureAuGracePeriod                        = $signatureAuGracePeriod
-                SignatureBlobFileSharesSources                = $preferences.SignatureBlobFileSharesSources
-                SignatureBlobUpdateInterval                   = $preferences.SignatureBlobUpdateInterval
-                SignatureDefinitionUpdateFileSharesSources    = $preferences.SignatureDefinitionUpdateFileSharesSources
-                SignatureDisableUpdateOnStartupWithoutEngine  = $preferences.SignatureDisableUpdateOnStartupWithoutEngine
-                SignatureFallbackOrder                        = $preferences.SignatureFallbackOrder
-                SignatureFirstAuGracePeriod                   = $signatureFirstAuGracePeriod
-                SignatureScheduleDay                          = $signatureScheduleDay
-                SignatureScheduleTime                         = $preferences.SignatureScheduleTime
-                SignatureUpdateCatchupInterval                = $signatureUpdateCatchupInterval
-                SignatureUpdateInterval                       = $signatureUpdateInterval
                 SubmitSamplesConsent                          = $submitSamplesConsent
                 ThreatIDDefaultAction_Actions                 = $threatIDDefaultAction_Actions
                 ThreatIDDefaultAction_Ids                     = $preferences.ThreatIDDefaultAction_Ids
@@ -388,7 +389,6 @@
             return
         }
         try {
-
             # Get computer stats
             $antivirusStatus = Get-MpComputerStatus -ErrorAction Stop
 
@@ -416,21 +416,32 @@
             }
 
             $sigResults = [PSCustomObject]@{
-                AMEngineVersion                 = $antivirusStatus.AMEngineVersion
-                AMProductVersion                = $antivirusStatus.AMProductVersion
-                AMServiceVersion                = $antivirusStatus.AMServiceVersion
-                AntispywareSignatureAge         = $antivirusStatus.AntispywareSignatureAge
-                AntispywareSignatureLastUpdated = $antivirusStatus.AntispywareSignatureLastUpdated
-                AntispywareSignatureVersion     = $antivirusStatus.AntispywareSignatureVersion
-                AntivirusSignatureAge           = $antivirusStatus.AntivirusSignatureAge
-                AntivirusSignatureLastUpdated   = $antivirusStatus.AntivirusSignatureLastUpdated
-                AntivirusSignatureVersion       = $antivirusStatus.AntivirusSignatureVersion
-                DefenderSignaturesOutOfDate     = $antivirusStatus.DefenderSignaturesOutOfDate
-                NISEngineVersion                = $antivirusStatus.NISEngineVersion
-                NISSignatureAge                 = $antivirusStatus.NISSignatureAge
-                NISSignatureLastUpdated         = $antivirusStatus.NISSignatureLastUpdated
-                NISSignatureVersion             = $antivirusStatus.NISSignatureVersion
-                QuickScanSignatureVersion       = $antivirusStatus.QuickScanSignatureVersion
+                AMEngineVersion                              = $antivirusStatus.AMEngineVersion
+                AMProductVersion                             = $antivirusStatus.AMProductVersion
+                AMServiceVersion                             = $antivirusStatus.AMServiceVersion
+                AntispywareSignatureAge                      = $antivirusStatus.AntispywareSignatureAge
+                AntispywareSignatureLastUpdated              = $antivirusStatus.AntispywareSignatureLastUpdated
+                AntispywareSignatureVersion                  = $antivirusStatus.AntispywareSignatureVersion
+                AntivirusSignatureAge                        = $antivirusStatus.AntivirusSignatureAge
+                AntivirusSignatureLastUpdated                = $antivirusStatus.AntivirusSignatureLastUpdated
+                AntivirusSignatureVersion                    = $antivirusStatus.AntivirusSignatureVersion
+                DefenderSignaturesOutOfDate                  = $antivirusStatus.DefenderSignaturesOutOfDate
+                NISEngineVersion                             = $antivirusStatus.NISEngineVersion
+                NISSignatureAge                              = $antivirusStatus.NISSignatureAge
+                NISSignatureLastUpdated                      = $antivirusStatus.NISSignatureLastUpdated
+                NISSignatureVersion                          = $antivirusStatus.NISSignatureVersion
+                QuickScanSignatureVersion                    = $antivirusStatus.QuickScanSignatureVersion
+                SignatureAuGracePeriod                       = $signatureAuGracePeriod
+                SignatureBlobFileSharesSources               = $preferences.SignatureBlobFileSharesSources
+                SignatureBlobUpdateInterval                  = $preferences.SignatureBlobUpdateInterval
+                SignatureDefinitionUpdateFileSharesSources   = $preferences.SignatureDefinitionUpdateFileSharesSources
+                SignatureDisableUpdateOnStartupWithoutEngine = $preferences.SignatureDisableUpdateOnStartupWithoutEngine
+                SignatureFallbackOrder                       = $preferences.SignatureFallbackOrder
+                SignatureFirstAuGracePeriod                  = $signatureFirstAuGracePeriod
+                SignatureScheduleDay                         = $signatureScheduleDay
+                SignatureScheduleTime                        = $preferences.SignatureScheduleTime
+                SignatureUpdateCatchupInterval               = $signatureUpdateCatchupInterval
+                SignatureUpdateInterval                      = $signatureUpdateInterval
             }
         }
         catch {
@@ -439,28 +450,37 @@
             return
         }
 
-        # If nothing was specified to be displayed then show everything by default
-        if(-NOT($DisplayAvResults) -and -NOT($DisplaySignatureResults) -and -NOT($DisplayPolicyResults))
-        {
-            $avResults
-            $sigResults
-            $policyResults
+        try {
+            # If nothing was specified to be displayed then show everything by default
+            if (-NOT($parameters.ContainsKey('DisplayAvResults')) -and -NOT($parameters.ContainsKey('DisplaySignatureResults')) -and -NOT($parameters.ContainsKey('DisplayPolicyResults'))) {
+                $avResults
+                $sigResults
+                $policyResults
+            }
+
+            # Allow the end user to select the results to be displayed by choice
+            if ($parameters.ContainsKey('DisplayAvResults')) { $avResults }
+            if ($parameters.ContainsKey('DisplaySignatureResults')) { $sigResults }
+            if ($parameters.ContainsKey('$DisplayPolicyResults')) { $policyResults }
+        }
+        catch {
+            Write-Output "ERROR: Please check $(Join-Path -Path $ExportPath -ChildPath $ErrorLog) for more information"
+            Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $ErrorLog) -InputObject $_ -Encoding UTF8 -NoTypeInformation -Force -ErrorAction Stop
+            return
         }
 
-        # Allow the end user to select the results to be displayed by choice
-        if ($DisplayAvResults) { $avResults }
-        if ($DisplaySignatureResults) { $sigResults }
-        if ($DisplayPolicyResults) { $policyResults }
         Remove-Module -Name ConfigDefender
     }
 
     end {
-        if ($SaveResults) {
+        if ($parameters.ContainsKey('SaveResults')) {
             try {
                 Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $MpExportFile)"
                 Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $MpExportFile) -InputObject $policyResults -Encoding UTF8 -ErrorAction SilentlyContinue
-                Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $ComputerStatusExportFile)"
-                Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $ComputerStatusExportFile) -InputObject $avResults -Encoding UTF8 -ErrorAction SilentlyContinue
+                Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $AvResultsExportFile)"
+                Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $AvResultsExportFile) -InputObject $avResults -Encoding UTF8 -ErrorAction SilentlyContinue
+                Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $SignatureResultsExportFile)"
+                Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $SignatureResultsExportFile) -InputObject $sigResults -Encoding UTF8 -ErrorAction SilentlyContinue
             }
             catch {
                 Write-Output "ERROR: Please check $(Join-Path -Path $ExportPath -ChildPath $ErrorLog) for more information"
