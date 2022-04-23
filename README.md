@@ -5,7 +5,7 @@ This is a overload function that will call Get-MpPreferences and Get-MpComputerS
 
     This will retrieve all of the settings and display the information to the console. 
 
-> Example 2: Get-MpPreferences -DisplayPolicyResults -DisplaySignatureResults
+> Example 2: Get-MpPreferences -DisplayPolicySettings -DisplaySignatureSettings
 
     This will retrieve the settings and display the antivirus policy and signature information to the console. 
 
@@ -22,6 +22,11 @@ This is a overload function that will call Get-MpPreferences and Get-MpComputerS
 > Example 6: Get-MpPreferences -SaveResults
 
     This will retrieve the settings and save them to the temp location
+
+> Example 7: Get-MpPreferences -DisplayTamperProtectionSettings -DisplayWindowsDefenderSettings -DisplaySignatureSettings -DisplayAvSettings
+
+    This will retrieve the Tamper Protection, Windows Defender, Signature and Antivirus settings and display them to the console
+
 
 
 <span style="color:orange">NOTE:</span> All errors are saved to "$env:TEMP\MpPreferenceErrors.txt"

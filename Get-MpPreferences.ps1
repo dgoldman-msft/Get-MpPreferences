@@ -6,17 +6,23 @@
     .DESCRIPTION
         This is a overload function that will call Get-MpPreferences from the Microsoft Defender Antivirus policies with full details on each Setting
 
-    .PARAMETER AvResultsExportFile
+    .PARAMETER AmResultsExportFile
         Computer antivirus output file name
 
-    .PARAMETER DisplayAvResults
+    .PARAMETER DisplayAmSettings
         Switch used to display antivirus policy results to the console
 
-    .PARAMETER DisplayPolicyResults
-        Switch used to display results to the console
+    .PARAMETER DisplayScannerSettings
+        Switch used to display scanner settings to the console
 
-    .PARAMETER DisplaySignatureResults
+    .PARAMETER DisplaySignatureSettings
         Switch used to display antivirus signature results to the console
+
+    .PARAMETER DisplayTamperProtectionSettings
+        Switch used to display tamper protection results to the console
+
+    .PARAMETER DisplayWindowsDefenderSettings
+        Switch used to display policy to the console
 
     .PARAMETER ErrorLog
         Error log name
@@ -34,7 +40,7 @@
         Computer antivirus signature output file name
 
     .EXAMPLE
-        C:\PS> Get-MpPreferences -DisplayPolicyResults
+        C:\PS> Get-MpPreferences -DisplayWindowsDefenderSettings
 
         This will retrieve the settings and save them to the default location of "$env:TEMP\\MpPreferencesOutput.txt" and display the information to the console
 
@@ -53,29 +59,48 @@
 
         This will retrieve the settings and save them to your custom path and filename
 
+    .EXAMPLE
+        C:\PS> Get-MpPreferences -DisplayTamperProtectionSettings -DisplayWindowsDefenderSettings -DisplaySignatureSettings -DisplayAmSettings
+
+        This will retrieve the Tamper Protection, Windows Defender, Signature and Antivirus settings and display them to the console
+
+    .EXAMPLE
+        C:\PS> GetSettings
+
+        You can also use an alias to run the method
+
     .NOTES
         This just invokes the Get-MpPreference cmdlet and writes up the full details in a readable format
     #>
 
+    [OutputType('System.String')]
+    [OutputType('PSCustomObject')]
     [CmdletBinding()]
+    [Alias('GetSettings')]
     param(
         [string]
-        $AvResultsExportFile = "AvOutput.txt",
+        $AmResultsExportFile = 'AvOutput.txt',
 
         [switch]
-        $DisplayAvResults,
+        $DisplayAmSettings,
 
         [switch]
-        $DisplayPolicyResults,
+        $DisplayScannerSettings,
 
         [switch]
-        $DisplaySignatureResults,
+        $DisplaySignatureSettings,
+
+        [switch]
+        $DisplayTamperProtectionSettings,
+
+        [switch]
+        $DisplayWindowsDefenderSettings,
 
         [string]
-        $ErrorLog = "MpPreferenceErrors.txt",
+        $ErrorLog = 'MpPreferenceErrors.txt',
 
         [string]
-        $MpExportFile = "MpPreferencesOutput.txt",
+        $MpExportFile = 'MpPreferencesOutput.txt',
 
         [string]
         $ExportPath = "$env:TEMP",
@@ -84,17 +109,22 @@
         $SaveResults,
 
         [string]
-        $SignatureResultsExportFile = "AvSignatureOutput.txt"
+        $SignatureResultsExportFile = 'AvSignatureOutput.txt'
     )
 
     begin {
-        Write-Output "Checking for and importing the Microsoft Defender module"
+        Write-Output 'Checking for and importing the Microsoft Defender module'
         $parameters = $PSBoundParameters
+        $antimalwareSettings = 'Antimalware Settings'
+        $signatureSettings = 'Antimalware Signature Settings'
+        $tamperProtectionSettings = 'Tamper Protection Settings'
+        $windowsDefenderSettings = 'Windows Defender Scans & Update Preferences'
+        $windowsDefenderScannerSettings = 'Windows Defender Scanner Settings'
     }
 
     process {
         try {
-            Write-Output "Getting ConfigDefender Antivirus preferences"
+            Write-Output "Getting ConfigDefender Antivirus preferences`n"
             $preferences = Get-MpPreference -ErrorAction Stop
 
             #region Customizations
@@ -289,6 +319,7 @@
             }
             #endregion Customizations
 
+            # Windows Defender scans and update preferences
             $policyResults = [PSCustomObject]@{
                 AllowDatagramProcessingOnWinServer            = $preferences.AllowDatagramProcessingOnWinServer
                 AllowNetworkProtectionDownLevel               = $preferences.AllowNetworkProtectionDownLevel
@@ -389,48 +420,47 @@
             return
         }
         try {
-            # Get computer stats
-            $antivirusStatus = Get-MpComputerStatus -ErrorAction Stop
+            $antimalwareStatus = Get-MpComputerStatus -ErrorAction Stop
 
             $avResults = [PSCustomObject]@{
-                AMRunningMode                    = $antivirusStatus.AMRunningMode
-                AMServiceEnabled                 = $antivirusStatus.AMServiceEnabled
-                AntispywareEnabled               = $antivirusStatus.AntispywareEnabled
-                AntivirusEnabled                 = $antivirusStatus.AntivirusEnabled
-                BehaviorMonitorEnabled           = $antivirusStatus.BehaviorMonitorEnabled
-                ComputerState                    = $antivirusStatus.ComputerState
-                DefenderSignaturesOutOfDate      = $antivirusStatus.DefenderSignaturesOutOfDate
-                DeviceControlDefaultEnforcement  = $antivirusStatus.DeviceControlDefaultEnforcement
-                DeviceControlPoliciesLastUpdated = $antivirusStatus.DeviceControlPoliciesLastUpdated
-                DeviceControlState               = $antivirusStatus.DeviceControlState
-                IsTamperProtected                = $antivirusStatus.IsTamperProtected
-                IsVirtualMachine                 = $antivirusStatus.IsVirtualMachine
-                NISEnabled                       = $antivirusStatus.NISEnabled
-                OnAccessProtectionEnabled        = $antivirusStatus.OnAccessProtectionEnabled
-                RealTimeProtectionEnabled        = $antivirusStatus.RealTimeProtectionEnabled
-                RealTimeScanDirection            = $antivirusStatus.RealTimeScanDirection
-                RebootRequired                   = $antivirusStatus.RebootRequired
-                TamperProtectionSource           = $antivirusStatus.TamperProtectionSource
-                TDTMode                          = $antivirusStatus.TDTMode
-                TDTStatus                        = $antivirusStatus.TDTStatus
+                AMRunningMode                    = $antimalwareStatus.AMRunningMode
+                AMServiceEnabled                 = $antimalwareStatus.AMServiceEnabled
+                AntispywareEnabled               = $antimalwareStatus.AntispywareEnabled
+                AntivirusEnabled                 = $antimalwareStatus.AntivirusEnabled
+                BehaviorMonitorEnabled           = $antimalwareStatus.BehaviorMonitorEnabled
+                ComputerState                    = $antimalwareStatus.ComputerState
+                DefenderSignaturesOutOfDate      = $antimalwareStatus.DefenderSignaturesOutOfDate
+                DeviceControlDefaultEnforcement  = $antimalwareStatus.DeviceControlDefaultEnforcement
+                DeviceControlPoliciesLastUpdated = $antimalwareStatus.DeviceControlPoliciesLastUpdated
+                DeviceControlState               = $antimalwareStatus.DeviceControlState
+                IsTamperProtected                = $antimalwareStatus.IsTamperProtected
+                IsVirtualMachine                 = $antimalwareStatus.IsVirtualMachine
+                NISEnabled                       = $antimalwareStatus.NISEnabled
+                OnAccessProtectionEnabled        = $antimalwareStatus.OnAccessProtectionEnabled
+                RealTimeProtectionEnabled        = $antimalwareStatus.RealTimeProtectionEnabled
+                RealTimeScanDirection            = $antimalwareStatus.RealTimeScanDirection
+                RebootRequired                   = $antimalwareStatus.RebootRequired
+                TamperProtectionSource           = $antimalwareStatus.TamperProtectionSource
+                TDTMode                          = $antimalwareStatus.TDTMode
+                TDTStatus                        = $antimalwareStatus.TDTStatus
             }
 
             $sigResults = [PSCustomObject]@{
-                AMEngineVersion                              = $antivirusStatus.AMEngineVersion
-                AMProductVersion                             = $antivirusStatus.AMProductVersion
-                AMServiceVersion                             = $antivirusStatus.AMServiceVersion
-                AntispywareSignatureAge                      = $antivirusStatus.AntispywareSignatureAge
-                AntispywareSignatureLastUpdated              = $antivirusStatus.AntispywareSignatureLastUpdated
-                AntispywareSignatureVersion                  = $antivirusStatus.AntispywareSignatureVersion
-                AntivirusSignatureAge                        = $antivirusStatus.AntivirusSignatureAge
-                AntivirusSignatureLastUpdated                = $antivirusStatus.AntivirusSignatureLastUpdated
-                AntivirusSignatureVersion                    = $antivirusStatus.AntivirusSignatureVersion
-                DefenderSignaturesOutOfDate                  = $antivirusStatus.DefenderSignaturesOutOfDate
-                NISEngineVersion                             = $antivirusStatus.NISEngineVersion
-                NISSignatureAge                              = $antivirusStatus.NISSignatureAge
-                NISSignatureLastUpdated                      = $antivirusStatus.NISSignatureLastUpdated
-                NISSignatureVersion                          = $antivirusStatus.NISSignatureVersion
-                QuickScanSignatureVersion                    = $antivirusStatus.QuickScanSignatureVersion
+                AMEngineVersion                              = $antimalwareStatus.AMEngineVersion
+                AMProductVersion                             = $antimalwareStatus.AMProductVersion
+                AMServiceVersion                             = $antimalwareStatus.AMServiceVersion
+                AntispywareSignatureAge                      = $antimalwareStatus.AntispywareSignatureAge
+                AntispywareSignatureLastUpdated              = $antimalwareStatus.AntispywareSignatureLastUpdated
+                AntispywareSignatureVersion                  = $antimalwareStatus.AntispywareSignatureVersion
+                AntivirusSignatureAge                        = $antimalwareStatus.AntivirusSignatureAge
+                AntivirusSignatureLastUpdated                = $antimalwareStatus.AntivirusSignatureLastUpdated
+                AntivirusSignatureVersion                    = $antimalwareStatus.AntivirusSignatureVersion
+                DefenderSignaturesOutOfDate                  = $antimalwareStatus.DefenderSignaturesOutOfDate
+                NISEngineVersion                             = $antimalwareStatus.NISEngineVersion
+                NISSignatureAge                              = $antimalwareStatus.NISSignatureAge
+                NISSignatureLastUpdated                      = $antimalwareStatus.NISSignatureLastUpdated
+                NISSignatureVersion                          = $antimalwareStatus.NISSignatureVersion
+                QuickScanSignatureVersion                    = $antimalwareStatus.QuickScanSignatureVersion
                 SignatureAuGracePeriod                       = $signatureAuGracePeriod
                 SignatureBlobFileSharesSources               = $preferences.SignatureBlobFileSharesSources
                 SignatureBlobUpdateInterval                  = $preferences.SignatureBlobUpdateInterval
@@ -443,6 +473,35 @@
                 SignatureUpdateCatchupInterval               = $signatureUpdateCatchupInterval
                 SignatureUpdateInterval                      = $signatureUpdateInterval
             }
+
+            $tamperResults = [PSCustomObject]@{
+                CloudBlockLevel        = $cloudBlockLevel
+                IsTamperProtected      = $antimalwareStatus.IsTamperProtected
+                TamperProtectionSource = $antimalwareStatus.TamperProtectionSource
+            }
+
+            $scannerResults = [PSCustomObject]@{
+                CheckForSignaturesBeforeRunningScan           = $preferences.CheckForSignaturesBeforeRunningScan
+                DisableCatchupFullScan                        = $preferences.DisableCatchupFullScan
+                DisableCatchupQuickScan                       = $preferences.DisableCatchupQuickScan
+                DisableCpuThrottleOnIdleScans                 = $preferences.DisableCpuThrottleOnIdleScans
+                DisableEmailScanning                          = $preferences.DisableEmailScanning
+                DisableRemovableDriveScanning                 = $preferences.DisableRemovableDriveScanning
+                DisableScanningMappedNetworkDrivesForFullScan = $preferences.DisableScanningMappedNetworkDrivesForFullScan
+                DisableScanningNetworkFiles                   = $preferences.DisableScanningNetworkFiles
+                EnableFullScanOnBatteryPower                  = $preferences.EnableFullScanOnBatteryPower
+                QuickScanSignatureVersion                     = $antimalwareStatus.QuickScanSignatureVersion
+                RealTimeScanDirection                         = $antimalwareStatus.RealTimeScanDirection
+                ScanAvgCPULoadFactor                          = $scanAvgCPULoadFactor
+                ScanOnlyIfIdleEnabled                         = $preferences.ScanOnlyIfIdleEnabled
+                ScanParameters                                = $scanParameters
+                ScanPurgeItemsAfterDelay                      = $scanPurgeItemsAfterDelay
+                ScanScheduleDay                               = $scanScheduleDay
+                ScanScheduleOffset                            = $scanScheduleOffset
+                ScanScheduleQuickScanTime                     = $scanScheduleQuickScanTime
+                ScanScheduleTime                              = $scanScheduleTime
+                ThrottleForScheduledScanOnly                  = $preferences.ThrottleForScheduledScanOnly
+            }
         }
         catch {
             Write-Output "ERROR: Please check $(Join-Path -Path $ExportPath -ChildPath $ErrorLog) for more information"
@@ -452,16 +511,41 @@
 
         try {
             # If nothing was specified to be displayed then show everything by default
-            if (-NOT($parameters.ContainsKey('DisplayAvResults')) -and -NOT($parameters.ContainsKey('DisplaySignatureResults')) -and -NOT($parameters.ContainsKey('DisplayPolicyResults'))) {
+            if (-NOT($parameters.ContainsKey('DisplayAmSettings')) -and -NOT($parameters.ContainsKey('DisplaySignatureSettings'))`
+                    -and -NOT($parameters.ContainsKey('DisplayWindowsDefenderSettings')) -and -NOT($parameters.ContainsKey('DisplayTamperProtectionSettings'))`
+                    -and -NOT($parameters.ContainsKey('DisplayScannerSettings'))) {
                 $avResults
                 $sigResults
                 $policyResults
             }
 
             # Allow the end user to select the results to be displayed by choice
-            if ($parameters.ContainsKey('DisplayAvResults')) { $avResults }
-            if ($parameters.ContainsKey('DisplaySignatureResults')) { $sigResults }
-            if ($parameters.ContainsKey('$DisplayPolicyResults')) { $policyResults }
+            if ($parameters.ContainsKey('DisplayAmSettings')) {
+                $antimalwareSettings
+                '-' * $antimalwareSettings.Length
+                $avResults
+            }
+            if ($parameters.ContainsKey('DisplayTamperProtectionSettings')) {
+                $tamperProtectionSettings
+                '-' * $tamperProtectionSettings.Length
+                $tamperResults
+            }
+            if ($parameters.ContainsKey('DisplaySignatureSettings')) {
+                $signatureSettings
+                '-' * $signatureSettings.Length
+                $sigResults
+            }
+            if ($parameters.ContainsKey('DisplayWindowsDefenderSettings')) {
+                $windowsDefenderSettings
+                '-' * $windowsDefenderSettings.Length
+                $policyResults
+            }
+
+            if ($parameters.ContainsKey('DisplayScannerSettings')) {
+                $windowsDefenderScannerSettings
+                '-' * $windowsDefenderScannerSettings.length
+                $scannerResults
+            }
         }
         catch {
             Write-Output "ERROR: Please check $(Join-Path -Path $ExportPath -ChildPath $ErrorLog) for more information"
@@ -477,8 +561,8 @@
             try {
                 Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $MpExportFile)"
                 Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $MpExportFile) -InputObject $policyResults -Encoding UTF8 -ErrorAction SilentlyContinue
-                Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $AvResultsExportFile)"
-                Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $AvResultsExportFile) -InputObject $avResults -Encoding UTF8 -ErrorAction SilentlyContinue
+                Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $AmResultsExportFile)"
+                Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $AmResultsExportFile) -InputObject $avResults -Encoding UTF8 -ErrorAction SilentlyContinue
                 Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $SignatureResultsExportFile)"
                 Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $SignatureResultsExportFile) -InputObject $sigResults -Encoding UTF8 -ErrorAction SilentlyContinue
             }
