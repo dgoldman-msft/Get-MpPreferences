@@ -1,10 +1,10 @@
-﻿function Get-MpPreferences {
+﻿function Get-MpPreference {
     <#
     .SYNOPSIS
         Get Windows Defender Policy Settings
 
     .DESCRIPTION
-        This is a overload function that will call Get-MpPreferences from the Microsoft Defender Antivirus policies with full details on each Setting
+        This is a overload function that will call Get-MpPreference from the Microsoft Defender Antivirus policies with full details on each Setting
 
     .PARAMETER AmResultsExportFile
         Computer antivirus output file name
@@ -40,27 +40,27 @@
         Computer antivirus signature output file name
 
     .EXAMPLE
-        C:\PS> Get-MpPreferences -DisplayWindowsDefenderSettings
+        C:\PS> Get-MpPreference -DisplayWindowsDefenderSettings
 
-        This will retrieve the settings and save them to the default location of "$env:TEMP\\MpPreferencesOutput.txt" and display the information to the console
-
-    .EXAMPLE
-        C:\PS> Get-MpPreferences
-
-        This will retrieve the settings and save them to the default location of "c:\temp\MpPreferencesOutput.txt"
+        This will retrieve the settings and save them to the default location of "$env:TEMP\\MpPreferenceOutput.txt" and display the information to the console
 
     .EXAMPLE
-        C:\PS> Get-MpPreferences -Verbose
+        C:\PS> Get-MpPreference
 
-        This will retrieve the settings and save them to the default location of "$env:TEMP\MpPreferencesOutput.txt" and display verbose information
+        This will retrieve the settings and save them to the default location of "c:\temp\MpPreferenceOutput.txt"
 
     .EXAMPLE
-        C:\PS> Get-MpPreferences -ExportPath "c:\YourDirectory" -ExportFile "MyErrorLog.txt"
+        C:\PS> Get-MpPreference -Verbose
+
+        This will retrieve the settings and save them to the default location of "$env:TEMP\MpPreferenceOutput.txt" and display verbose information
+
+    .EXAMPLE
+        C:\PS> Get-MpPreference -ExportPath "c:\YourDirectory" -ExportFile "MyErrorLog.txt"
 
         This will retrieve the settings and save them to your custom path and filename
 
     .EXAMPLE
-        C:\PS> Get-MpPreferences -DisplayTamperProtectionSettings -DisplayWindowsDefenderSettings -DisplaySignatureSettings -DisplayAmSettings
+        C:\PS> Get-MpPreference -DisplayTamperProtectionSettings -DisplayWindowsDefenderSettings -DisplaySignatureSettings -DisplayAmSettings
 
         This will retrieve the Tamper Protection, Windows Defender, Signature and Antivirus settings and display them to the console
 
@@ -100,7 +100,7 @@
         $ErrorLog = 'MpPreferenceErrors.txt',
 
         [string]
-        $MpExportFile = 'MpPreferencesOutput.txt',
+        $MpExportFile = 'MpPreferenceOutput.txt',
 
         [string]
         $ExportPath = "$env:TEMP",
@@ -118,67 +118,67 @@
         $antimalwareSettings = 'Antimalware Settings'
         $signatureSettings = 'Antimalware Signature Settings'
         $tamperProtectionSettings = 'Tamper Protection Settings'
-        $windowsDefenderSettings = 'Windows Defender Scans & Update Preferences'
+        $windowsDefenderSettings = 'Windows Defender Scans & Update Preference'
         $windowsDefenderScannerSettings = 'Windows Defender Scanner Settings'
     }
 
     process {
         try {
-            Write-Output "Getting ConfigDefender Antivirus preferences`n"
-            $preferences = Get-MpPreference -ErrorAction Stop
+            Write-Output "Getting ConfigDefender Antivirus preference`n"
+            $preference = Get-MpPreference -ErrorAction Stop
 
             #region Customizations
             # Windows Defender scans and updates
-            switch ($preferences.DefinitionUpdatesChannel) {
+            switch ($preference.DefinitionUpdatesChannel) {
                 0x0 { $definitionUpdatesChannel = 'NotConfigured. Devices stay up to date automatically during the gradual release cycle. This value is suitable for most devices.' }
                 0x1 { $definitionUpdatesChannel = 'Broad. Devices are offered updates only after the gradual release cycle completes. This value is suggested for a broad set of devices in your production population, from 10 to 100 percent.' }
                 0x2 { $definitionUpdatesChannel = 'Staged. Devices are offered updates after the monthly gradual release cycle. This value is suggested for a small, representative part of your production population, around 10 percent.' }
             }
 
             # Specifies the state for the controlled folder access feature
-            switch ($preferences.EnableControlledFolderAccess) {
+            switch ($preference.EnableControlledFolderAccess) {
                 0x0 { $enableControlledFolderAccess = 'Disabled' }
                 0x1 { $enableControlledFolderAccess = 'Enabled' }
                 0x2 { $enableControlledFolderAccess = 'Set to Audit Mode' }
             }
 
             # Specifies how the network protection service handles web-based malicious threats, including phishing and malware
-            switch ($preferences.EnableNetworkProtection) {
+            switch ($preference.EnableNetworkProtection) {
                 0x0 { $enableNetworkProtection = 'Disabled' }
                 0x1 { $enableNetworkProtection = 'Enabled' }
                 0x2 { $enableNetworkProtection = 'Set to Audit Mode' }
             }
 
             # Specifies which automatic remediation action to take for a low level threat
-            switch ($preferences.LowThreatDefaultAction) {
+            switch ($preference.LowThreatDefaultAction) {
                 0x0 { $lowThreatDefaultAction = 'Set to Quarantine' }
                 0x1 { $lowThreatDefaultAction = 'Set to Remove' }
                 0x2 { $lowThreatDefaultAction = 'Set to Ignore' }
             }
 
             # Specifies which automatic remediation action to take for a moderate level threat
-            switch ($preferences.ModerateThreatDefaultAction) {
+            switch ($preference.ModerateThreatDefaultAction) {
                 0x0 { $moderateThreatDefaultAction = 'Set to Quarantine' }
                 0x1 { $moderateThreatDefaultAction = 'Set to Remove' }
                 0x2 { $moderateThreatDefaultAction = 'Set to Ignore' }
             }
 
             # Specifies which automatic remediation action to take for a high level threat
-            switch ($preferences.HighThreatDefaultAction) {
+            switch ($preference.HighThreatDefaultAction) {
                 0x0 { $highThreatDefaultAction = 'Set to Quarantine' }
                 0x1 { $highThreatDefaultAction = 'Set to Remove' }
                 0x2 { $highThreatDefaultAction = 'Set to Ignore' }
             }
 
             # Specifies the type of membership in Microsoft Active Protection Service. Microsoft Active Protection Service is an online community that helps you choose how to respond to potential threats. The community also helps prevent the spread of new malicious software.
-            switch ($preferences.MAPSReporting) {
+            switch ($preference.MAPSReporting) {
                 0x0 { $MAPSReporting = 'Disabled. Send no information to Microsoft' }
                 0x1 { $MAPSReporting = 'Set to Basic membership. Send basic information to Microsoft about detected software, including where the software came from, the actions that you apply or that apply automatically, and whether the actions succeeded.' }
                 0x2 { $MAPSReporting = 'Set to Advanced membership. In addition to basic information, send more information to Microsoft about malicious software, spyware, and potentially unwanted software, including the location of the software, file names, how the software operates, and how it affects your computer.' }
             }
 
             # Specifies when devices receive Microsoft Defender platform updates during the monthly gradual rollout
-            switch ($preferences.PlatformUpdatesChannel) {
+            switch ($preference.PlatformUpdatesChannel) {
                 0x0 { $platformUpdatesChannel = 'NotConfigured. Devices stay up to date automatically during the gradual release cycle. This value is suitable for most devices.' }
                 0x1 { $platformUpdatesChannel = 'Set to Beta. Devices are the first to receive new updates. Select Beta Channel to participate in identifying and reporting issues to Microsoft. Devices in the Windows Insider Program are subscribed to this channel by default. This value is for use in manual test environments only and a limited number of devices.' }
                 0x2 { $platformUpdatesChannel = 'Set to Broad. Devices are offered updates only after the gradual release cycle completes. This value is suggested for a broad set of devices in your production population, from 10 to 100 percent.' }
@@ -188,26 +188,26 @@
             }
 
             # Proxy settings
-            if (-NOT ($preferences.ProxyBypass)) { $proxyBypass = 'No Proxy Bypass Detected' } else { $proxyBypass = $preferences.ProxyBypass }
-            if (-NOT ($preferences.ProxyPacUrl)) { $proxyPacUrl = 'No Proxy Pac URL Detected' } else { $proxyPacUrl = $preferences.ProxyPacUrl }
-            if (-NOT ($preferences.ProxyServer)) { $proxyServer = 'No Proxy Server Detected' } else { $proxyServer = $preferences.ProxyServer }
+            if (-NOT ($preference.ProxyBypass)) { $proxyBypass = 'No Proxy Bypass Detected' } else { $proxyBypass = $preference.ProxyBypass }
+            if (-NOT ($preference.ProxyPacUrl)) { $proxyPacUrl = 'No Proxy Pac URL Detected' } else { $proxyPacUrl = $preference.ProxyPacUrl }
+            if (-NOT ($preference.ProxyServer)) { $proxyServer = 'No Proxy Server Detected' } else { $proxyServer = $preference.ProxyServer }
 
             # Specifies the level of detection for potentially unwanted applications. When potentially unwanted software is downloaded or attempts to install itself on your computer, you are warned
-            switch ($preferences.PUAProtection) {
+            switch ($preference.PUAProtection) {
                 0x0 { $pUAProtection = 'Disabled' }
                 0x1 { $pUAProtection = 'Enabled' }
                 0x2 { $pUAProtection = 'Set to Audit Mode' }
             }
 
             # Specifies scanning configuration for incoming and outgoing files on NTFS volumes.
-            switch ($preferences.RealTimeScanDirection) {
+            switch ($preference.RealTimeScanDirection) {
                 0x0 { $realTimeScanDirection = 'Default - Scan both incoming and outgoing files' }
                 0x1 { $realTimeScanDirection = 'Scan incoming files only' }
                 0x2 { $realTimeScanDirection = 'Scan outgoing files only' }
             }
 
             # Specifies the day of the week on which to perform a scheduled full scan in order to complete remediation. Alternatively, specify everyday for this full scan or never.
-            switch ($preferences.RemediationScheduleDay) {
+            switch ($preference.RemediationScheduleDay) {
                 0x0 { $remediationScheduleDay = 'Set to Everyday' }
                 0x1 { $remediationScheduleDay = 'Set to Sunday' }
                 0x2 { $remediationScheduleDay = 'Set to Monday' }
