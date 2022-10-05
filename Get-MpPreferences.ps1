@@ -12,6 +12,9 @@
     .PARAMETER DisplayAmSettings
         Switch used to display antivirus policy results to the console
 
+    .PARAMETER DisplayExclusionSettings
+        Switch used to display exclusion settings to the console
+
     .PARAMETER DisplayScannerSettings
         Switch used to display scanner settings to the console
 
@@ -70,19 +73,22 @@
         You can also use an alias to run the method
 
     .NOTES
-        This just invokes the Get-MpPreference cmdlet and writes up the full details in a readable format
+        This just invokes the Get-MpPreference and Get-MpComputerStatus cmdlets and writes up the full details in a readable format
     #>
 
     [OutputType('System.String')]
     [OutputType('PSCustomObject')]
     [CmdletBinding()]
-    [Alias('GetSettings')]
+    [Alias('GetAVSettings')]
     param(
         [string]
         $AmResultsExportFile = 'AvOutput.txt',
 
         [switch]
         $DisplayAmSettings,
+
+        [switch]
+        $DisplayExclusionSettings,
 
         [switch]
         $DisplayScannerSettings,
@@ -109,17 +115,22 @@
         $SaveResults,
 
         [string]
-        $SignatureResultsExportFile = 'AvSignatureOutput.txt'
+        $SignatureResultsExportFile = 'AvSignatureOutput.txt',
+
+        [string]
+        $ExclusionResultsExportFile = 'AvExclusionOutput.txt'
     )
 
     begin {
         Write-Output 'Checking for and importing the Microsoft Defender module'
         $parameters = $PSBoundParameters
         $antimalwareSettings = 'Antimalware Settings'
+        $exclusionSettings = 'Antimalware Exclusion Settings'
         $signatureSettings = 'Antimalware Signature Settings'
         $tamperProtectionSettings = 'Tamper Protection Settings'
         $windowsDefenderSettings = 'Windows Defender Scans & Update Preferences'
         $windowsDefenderScannerSettings = 'Windows Defender Scanner Settings'
+
     }
 
     process {
@@ -249,7 +260,7 @@
                 0x0 { $scanScheduleDay = 'Set to Everyday' }
                 0x1 { $scanScheduleDay = 'Set to Sunday' }
                 0x2 { $scanScheduleDay = 'Set to Monday' }
-                0x3 { $scanScheduleDay = 'Set to Tueday' }
+                0x3 { $scanScheduleDay = 'Set to Tuesday' }
                 0x4 { $scanScheduleDay = 'Set to Wednesday' }
                 0x5 { $scanScheduleDay = 'Set to Thursday' }
                 0x6 { $scanScheduleDay = 'Set to Friday' }
@@ -272,7 +283,7 @@
                 0x0 { $signatureScheduleDay = 'Set to Everyday' }
                 0x1 { $signatureScheduleDay = 'Set to Sunday' }
                 0x2 { $signatureScheduleDay = 'Set to Monday' }
-                0x3 { $signatureScheduleDay = 'Set to Tueday' }
+                0x3 { $signatureScheduleDay = 'Set to Tuesday' }
                 0x4 { $signatureScheduleDay = 'Set to Wednesday' }
                 0x5 { $signatureScheduleDay = 'Set to Thursday' }
                 0x6 { $signatureScheduleDay = 'Set to Friday' }
@@ -510,10 +521,24 @@
         }
 
         try {
+            $exclusionResults = [PSCustomObject]@{
+                ExclusionExtension = $preferences.ExclusionExtension
+                ExclusionIpAddress = $preferences.ExclusionIpAddress
+                ExclusionPath      = $preferences.ExclusionPath
+                ExclusionProcess   = $preferences.ExclusionProcess
+            }
+        }
+        catch {
+            Write-Output "ERROR: Please check $(Join-Path -Path $ExportPath -ChildPath $ErrorLog) for more information"
+            [PSCustomObject]$_ | Export-CSV -Path (Join-Path -Path $ExportPath -ChildPath $ErrorLog) -Encoding UTF8 -Force -NoTypeInformation -ErrorAction Stop
+            return
+        }
+
+        try {
             # If nothing was specified to be displayed then show everything by default
             if (-NOT($parameters.ContainsKey('DisplayAmSettings')) -and -NOT($parameters.ContainsKey('DisplaySignatureSettings'))`
                     -and -NOT($parameters.ContainsKey('DisplayWindowsDefenderSettings')) -and -NOT($parameters.ContainsKey('DisplayTamperProtectionSettings'))`
-                    -and -NOT($parameters.ContainsKey('DisplayScannerSettings'))) {
+                    -and -NOT($parameters.ContainsKey('DisplayScannerSettings')) -and -NOT($parameters.ContainsKey('DisplayExclusionSettings'))) {
                 $avResults
                 $sigResults
                 $policyResults
@@ -546,6 +571,12 @@
                 '-' * $windowsDefenderScannerSettings.length
                 $scannerResults
             }
+
+            if ($parameters.ContainsKey('DisplayExclusionSettings')) {
+                $exclusionSettings
+                '-' * $exclusionSettings.length
+                $exclusionResults
+            }
         }
         catch {
             Write-Output "ERROR: Please check $(Join-Path -Path $ExportPath -ChildPath $ErrorLog) for more information"
@@ -565,6 +596,9 @@
                 Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $AmResultsExportFile) -InputObject $avResults -Encoding UTF8 -ErrorAction SilentlyContinue
                 Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $SignatureResultsExportFile)"
                 Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $SignatureResultsExportFile) -InputObject $sigResults -Encoding UTF8 -ErrorAction SilentlyContinue
+                Write-Output "Saving $(Join-Path -Path $ExportPath -ChildPath $ExclusionResultsExportFile)"
+                Out-File -FilePath (Join-Path -Path $ExportPath -ChildPath $ExclusionResultsExportFile) -InputObject $exclusionResults -Encoding UTF8 -ErrorAction SilentlyContinue
+
             }
             catch {
                 Write-Output "ERROR: Please check $(Join-Path -Path $ExportPath -ChildPath $ErrorLog) for more information"
