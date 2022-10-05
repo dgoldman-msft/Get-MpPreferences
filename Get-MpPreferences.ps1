@@ -130,11 +130,18 @@
         $tamperProtectionSettings = 'Tamper Protection Settings'
         $windowsDefenderSettings = 'Windows Defender Scans & Update Preferences'
         $windowsDefenderScannerSettings = 'Windows Defender Scanner Settings'
-
     }
 
     process {
         try {
+            if ($parameters.ContainsKey('DisplayExclusionSettings')) {
+                Write-Verbose "Checking for elevated permissions"
+                if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+                    Write-Output "You need to run this script as an Administrator to dump the machine exclusions. Open the PowerShell console as an administrator and run this script again."
+                    return
+                }
+            }
+            
             Write-Output "Getting ConfigDefender Antivirus preferences`n"
             $preferences = Get-MpPreference -ErrorAction Stop
 
