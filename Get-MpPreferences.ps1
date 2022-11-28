@@ -141,7 +141,7 @@
                     return
                 }
             }
-            
+
             Write-Output "Getting ConfigDefender Antivirus preferences`n"
             $preferences = Get-MpPreference -ErrorAction Stop
 
@@ -439,9 +439,9 @@
         }
         try {
             $antimalwareStatus = Get-MpComputerStatus -ErrorAction Stop
+            if ($antimalwareStatus.AMRunningMode -eq 'Normal') { $edrMode = 'Defender in Active Mode' } else { $edrMode = 'Defender in Passive Mode' }
 
             $avResults = [PSCustomObject]@{
-                AMRunningMode                    = $antimalwareStatus.AMRunningMode
                 AMServiceEnabled                 = $antimalwareStatus.AMServiceEnabled
                 AntispywareEnabled               = $antimalwareStatus.AntispywareEnabled
                 AntivirusEnabled                 = $antimalwareStatus.AntivirusEnabled
@@ -451,6 +451,7 @@
                 DeviceControlDefaultEnforcement  = $antimalwareStatus.DeviceControlDefaultEnforcement
                 DeviceControlPoliciesLastUpdated = $antimalwareStatus.DeviceControlPoliciesLastUpdated
                 DeviceControlState               = $antimalwareStatus.DeviceControlState
+                'EDR Block Mode'                 = $edrMode
                 IsTamperProtected                = $antimalwareStatus.IsTamperProtected
                 IsVirtualMachine                 = $antimalwareStatus.IsVirtualMachine
                 NISEnabled                       = $antimalwareStatus.NISEnabled
